@@ -23,7 +23,6 @@ def main():
 
 def format_image(f, file_name):
     im = Image.open(f)
-    print(im.size)
     im = im.resize((16, 16))
     print(im.mode)
     im = im.rotate(90)
@@ -33,7 +32,7 @@ def format_image(f, file_name):
             dimensions = 3
         im = np.asarray(im)
         try_this(im, dimensions, file_name)
-        return im
+    return im
         
         
 def try_this(image, d, file_name):
@@ -48,9 +47,9 @@ def try_this(image, d, file_name):
     im = Image.fromarray(image)
     im = im.rotate(270)
     im.save(f"output\\{file_name}")
-
-
     return image
+
+
 def invert_lines(pixels, d):
     for i in range(16):
         if i % 2 == 1:
@@ -69,7 +68,6 @@ def switch_pixels(pixels):
     for i in range(len(pixels)):
         pixels[i] = new[len(pixels)-i-1]
     return pixels
-
 
 
 def order_pixels(image):

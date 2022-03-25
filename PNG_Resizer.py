@@ -1,7 +1,20 @@
+from turtle import right
 import imageio, os
 import numpy as np
+from PIL import Image
 
-def corner_pixel(pixels, col, row, size):
+def average_pixel(pixels, dimensions):
+    values = []
+    print("Dimensions:", dimensions)
+    for d in range(dimensions):
+        avg = 0
+        for pix in pixels:
+            avg += int(pix[d])
+        values.append(int(avg/len(pixels)))
+    return tuple(values)
+
+
+def corner_pixel(pixels, col, row, dimensions):
     if col == 0:
         if row == 0: #top left corner
             vertical_pixel = pixels[col+1][row]
@@ -16,73 +29,76 @@ def corner_pixel(pixels, col, row, size):
         else: # bottom right corner
             vertical_pixel = pixels[col-1][row]
             horizontal_pixel = pixels[col][row-1]
-    r_av = (vertical_pixel[0] + horizontal_pixel[0])/2
-    g_av = (vertical_pixel[1] + horizontal_pixel[1])/2
-    b_av = (vertical_pixel[2] + horizontal_pixel[2])/2
-    return (r_av, g_av, b_av)
+    values = average_pixel([vertical_pixel, horizontal_pixel], dimensions)
+    return values
 
 
-def horizontal_pixel(pixels, col, row, size):
+def horizontal_pixel(pixels, col, row, dimensions):
     if row == 0:
         side_pixel = pixels[col][row+1]
     else:
         side_pixel = pixels[col][row-1]
     left_pixel = pixels[col-1][row]
     right_pixel = pixels[col+1][row]
-    r_av = (side_pixel[0] + left_pixel[0] + right_pixel[0])/3
-    g_av = (side_pixel[1] + left_pixel[1] + right_pixel[1])/3
-    b_av = (side_pixel[2] + left_pixel[2] + right_pixel[2])/3
-    return (r_av, g_av, b_av)
-    
+    values = average_pixel([side_pixel, left_pixel, right_pixel], dimensions)
+    return values
 
 
-def vertical_pixel(pixels, col, row, size):
+def vertical_pixel(pixels, col, row, dimensions):
     if col == 0:
         side_pixel = pixels[col+1][row]
     else:
         side_pixel = pixels[col-1][row]
     top_pixel = pixels[col][row-1]
     bot_pixel = pixels[col][row+1]
-    r_av = (side_pixel[0] + top_pixel[0] + bot_pixel[0])/4
-    g_av = (side_pixel[1] + top_pixel[1] + bot_pixel[1])/4
-    b_av = (side_pixel[2] + top_pixel[2] + bot_pixel[2])/4
-    return (r_av, g_av, b_av)
+    values = average_pixel([side_pixel, top_pixel, bot_pixel], dimensions)
+    return values
 
-def regular_pixel(pixels, col, row, size):
+
+def regular_pixel(pixels, col, row, dimensions):
     left_pixel = pixels[col-1][row]
     right_pixel = pixels[col+1][row]
     top_pixel = pixels[col][row-1]
     bot_pixel = pixels[col][row+1]
-    r_av = (left_pixel[0] + right_pixel[0] + top_pixel[0] + bot_pixel[0])/4
-    g_av = (left_pixel[1] + right_pixel[1] + top_pixel[1] + bot_pixel[1])/4
-    b_av = (left_pixel[2] + right_pixel[2] + top_pixel[2] + bot_pixel[2])/4
-    return (r_av, g_av, b_av)
+    values = average_pixel([left_pixel, right_pixel, top_pixel, bot_pixel], dimensions)
+    return values
 
 
 
-def resize_image(f, set_to):
-    im = imageio.imread(f)
-    width, height, dimensions = im.shape
+def resize_image(im, set_to):
+    (width, height, dimensions) = im.shape
     size = (width, height)
-    if width != set_to and height != set_to:
-        pixels = np.zeros((16, 16, 3))
-        for row in range(len(im)):
-            for col in range(len(row)):
-                if (row == 0 or row == height) and (col == 0 or col == width):
-                    pixels[col][row] = corner_pixel(im, col, row, size)
-                elif (row == 0 or row == height) and (col != 0 and col != width):
-                    pixels[col][row] = horizontal_pixel(im, col, row, size)
-                elif (col == 0 or col == width) and (row != 0 and row != height):
-                    pixels[col][row] = vertical_pixel(im, col, row, size)
+    pixels = np.zeros((set_to, set_to, 4))
+    for row in range(len(im)):
+        for col in range(len(im[row])):
+            if (row == 0 or row == height-1) and (col == 0 or col == width-1):
+                print("Doing corner!")
+                pixels[col][row] = corner_pixel(im, col, row, dimensions)
+            elif (row == 0 or row == height-1) and (col != 0 and col != width-1):
+                print("Doing horizontal pixel")
+                print("COL, ROW: ", col, row)
+                pixels[col][row] = horizontal_pixel(im, col, row, dimensions)
+            elif (col == 0 or col == width-1) and (row != 0 and row != height-1):
+                print("Doing vertical pixel")
+                pixels[col][row] = vertical_pixel(im, col, row, dimensions)
+            else:
+                print("Doing regular pixel")
+                pixels[col][row] = regular_pixel(im, col, row, dimensions)
+    return pixels
+    
 
 def main():
-    directory = "C:\\Users\\ltapi\\Desktop\\Universidad\\Fun\\LED_PROJECTS\\input"
+    directory = "C:\\Users\\ltapi\\Desktop\\Projects\\LED_PROJECTS\\input"
     set_to = 16
     for f in os.listdir(directory):
+        file_name = f
         f = os.path.join(directory, f)
-        resize_image(f, set_to)
-
-
+        im = Image.open(f)
+        print(im.mode)
+        im = np.asarray(im)
+        pixels = resize_image(im, set_to)
+        im = Image.fromarray(pixels)
+        im.save(f"output\\{file_name}")
 
 
 if __name__ == '__main__':
